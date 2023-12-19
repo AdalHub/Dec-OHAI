@@ -3,32 +3,37 @@ import getpass
 import time
 import json
 from openai import OpenAI
-from ddg import duckduckgo_search 
-from ddg import ddg_function
+import ddg_search
 from dotenv import load_dotenv
 
+def llm():
 
-load_dotenv()
+        # load_dotenv()
 
-open_ai_key = os.getenv('open_ai_key')
-os.environ["OPENAI_API_KEY"] = open_ai_key
+        # open_ai_key = os.getenv('open_ai_key')
+        # os.environ["OPENAI_API_KEY"] = "key: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"
+    
+    print(f"Assistant ID: {assistant_id}")
 
-#initializes a client, and creates an assistant using the OpenAI API. It then stores the assistant's ID.
+    use_assistant("what are goods specs for a $400 laptop")
+
+
+os.environ["OPENAI_API_KEY"] = getpass.getpass("OpenAI API Key:")
 client = OpenAI()
-
+    
+#initializes a client, and creates an assistant using the OpenAI API. It then stores the assistant's ID.
 assistant = client.beta.assistants.create(
-    name="Query Assistant",
-    instructions="You are a personal assistant. Use the provided functions to answer questions.",
-    tools=[
+        name="Query Assistant",
+        instructions="You are a personal assistant. Use the provided functions to answer questions.",
+        tools=[
 
-        {"type": "function",
-         "function" : ddg_function
-        }
-    ],
-    model="gpt-3.5-turbo"
-)
-
-
+            {"type": "function",
+            "function" : ddg_search.ddg_function
+            }
+        ],
+        model="gpt-3.5-turbo"
+    )
+assistant_id = assistant.id
 
 #handle the status of the run. If the run requires action, it calls submit_tool_outputs
 #to process any required tool outputs, then waits for the run to complete.
@@ -54,7 +59,7 @@ def submit_tool_outputs(thread_id, run_id, tools_to_call):
 
         if function_name == "duckduckgo_search":
             print("Consulting Duck Duck Go...")
-            output = duckduckgo_search(query=json.loads(function_args)["query"])
+            output = ddg_search.duckduckgo_search(query=json.loads(function_args)["query"])
 
         if output:
             tool_output_array.append({"tool_call_id": tool_call_id, "output": output})
@@ -102,7 +107,5 @@ def use_assistant(query):
 
   print_messages_from_thread(thread.id)
 
-
 if __name__ == "__main__":
-    user_query = "I am looking for a laptop with at least 6GB of RAM and some other good specs."
-    use_assistant("what are goods specs for a $700 laptop")
+    llm()
