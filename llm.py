@@ -6,18 +6,13 @@ from openai import OpenAI
 import ddg_search
 from dotenv import load_dotenv
 
-def llm():
 
-        # load_dotenv()
+
+#start variables needed for functions and environment 
+# load_dotenv()
 
         # open_ai_key = os.getenv('open_ai_key')
         # os.environ["OPENAI_API_KEY"] = "key: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"
-    
-    print(f"Assistant ID: {assistant_id}")
-
-    use_assistant("what are goods specs for a $400 laptop")
-
-
 os.environ["OPENAI_API_KEY"] = getpass.getpass("OpenAI API Key:")
 client = OpenAI()
     
@@ -34,6 +29,20 @@ assistant = client.beta.assistants.create(
         model="gpt-3.5-turbo"
     )
 assistant_id = assistant.id
+
+
+
+
+
+
+def llm():
+
+    
+    print(f"Assistant ID: {assistant_id}")
+
+    use_assistant("what are goods specs for a $400 laptop")
+
+
 
 #handle the status of the run. If the run requires action, it calls submit_tool_outputs
 #to process any required tool outputs, then waits for the run to complete.
@@ -106,6 +115,7 @@ def use_assistant(query):
     run = wait_for_run_completion(thread.id, run.id)
 
   print_messages_from_thread(thread.id)
+  
 
 if __name__ == "__main__":
     llm()
