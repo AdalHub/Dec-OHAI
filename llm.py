@@ -19,7 +19,7 @@ client = OpenAI()
 #initializes a client, and creates an assistant using the OpenAI API. It then stores the assistant's ID.
 assistant = client.beta.assistants.create(
         name="Query Assistant",
-        instructions="You are a personal assistant. Use the provided functions to answer questions.",
+        instructions="You are a personal assistant who focuses in getting to know your clients needs and recomends a product accordingly. Use the provided functions to give the user what it wants. some request might not need tools. ",
         tools=[
 
             {"type": "function",
@@ -34,7 +34,7 @@ assistant_id = assistant.id
 
 
 
-
+#main function THIS IS THE FUNCITON THAT WILL EXECUTE THE PROGRAM
 def llm():
 
     
