@@ -12,8 +12,9 @@ from dotenv import load_dotenv
 # load_dotenv()
 
         # open_ai_key = os.getenv('open_ai_key')
-        # os.environ["OPENAI_API_KEY"] = "key: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"
-os.environ["OPENAI_API_KEY"] = getpass.getpass("OpenAI API Key:")
+        
+# os.environ["OPENAI_API_KEY"] = getpass.getpass("OpenAI API Key:")
+os.environ["OPENAI_API_KEY"] = "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"
 client = OpenAI()
     
 #initializes a client, and creates an assistant using the OpenAI API. It then stores the assistant's ID.
@@ -36,12 +37,15 @@ assistant_id = assistant.id
 
 #main function THIS IS THE FUNCITON THAT WILL EXECUTE THE PROGRAM
 def llm():
-
-    
     print(f"Assistant ID: {assistant_id}")
 
-    use_assistant("what are goods specs for a $400 laptop")
+    while True:
+        user_input = input("Enter your query (or type 'exit' to end): ")
+        if user_input.lower() == 'exit':
+            print("Exiting the Assistant.")
+            break
 
+        use_assistant(user_input)
 
 
 #handle the status of the run. If the run requires action, it calls submit_tool_outputs
