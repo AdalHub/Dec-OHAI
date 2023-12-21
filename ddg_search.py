@@ -9,7 +9,7 @@ def duckduckgo_search(query):
 
 ddg_function={
     "name": "duckduckgo_search",
-    "description": "Searches for characteristics of an item when provided ambiguous language.",
+    "description": "Searches for characteristics of an item when provided ambiguous language.do not",
     "parameters" : {
       "type": "object",
       "properties" : {
