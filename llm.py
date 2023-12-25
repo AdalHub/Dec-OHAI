@@ -5,17 +5,29 @@ import json
 from openai import OpenAI
 import ddg_search
 from dotenv import load_dotenv
+from faunadb_client import get_fauna_client
+from faunadb import query as q
 
 
+# Load environment variables from .env file
+load_dotenv()
 
-#start variables needed for functions and environment 
-# load_dotenv()
+# Retrieve OpenAI API key from environment variables
+open_ai_key = os.getenv('open_ai_key')
 
-        # open_ai_key = os.getenv('open_ai_key')
-        
-# os.environ["OPENAI_API_KEY"] = getpass.getpass("OpenAI API Key:")
-os.environ["OPENAI_API_KEY"] = "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"
+# Set the OpenAI API key in the environment
+os.environ["OPENAI_API_KEY"] = open_ai_key
+
+# Initialize FaunaDB client
+fauna_client = get_fauna_client()
+
+# Example operation: fetch a document by its reference
+result = fauna_client.query(q.get(q.ref(q.collection('Products'), '384967684936171593')))
+print(result)
+
+# Initialize OpenAI client
 client = OpenAI()
+
     
 #initializes a client, and creates an assistant using the OpenAI API. It then stores the assistant's ID.
 assistant = client.beta.assistants.create(
@@ -60,6 +72,52 @@ def wait_for_run_completion(thread_id, run_id):
             return run
 
 
+#Adal adding the faunadb function
+def get_product_info(product_title):
+    try:
+        product = fauna_client.query(
+            q.get(q.match(q.index("products_by_title"), product_title))
+        )
+        return product['data']
+    except Exception as e:
+        return {'error': str(e)}
+
+def get_vendor_info(vendor_name):
+    try:
+        vendor = fauna_client.query(
+            q.get(q.match(q.index("vendors_by_name"), vendor_name))
+        )
+        return vendor['data']
+    except Exception as e:
+        return {'error': str(e)}
+
+def update_product_info(product_title, updated_data):
+    try:
+        response = fauna_client.query(
+            q.update(q.select("ref", q.get(q.match(q.index("products_by_title"), product_title))),
+                     {"data": updated_data})
+        )
+        return response['data']
+    except Exception as e:
+        return {'error': str(e)}
+
+def update_vendor_info(vendor_name, updated_data):
+    try:
+        response = fauna_client.query(
+            q.update(q.select("ref", q.get(q.match(q.index("vendors_by_name"), vendor_name))),
+                     {"data": updated_data})
+        )
+        return response['data']
+    except Exception as e:
+        return {'error': str(e)}
+
+#end of functons added
+
+
+
+
+
+
 
 
 def submit_tool_outputs(thread_id, run_id, tools_to_call):
@@ -69,10 +127,33 @@ def submit_tool_outputs(thread_id, run_id, tools_to_call):
         tool_call_id = tool.id
         function_name = tool.function.name
         function_args = tool.function.arguments
+        
+        # Example of checking for product information before searching the web
+        if function_name == "get_product_info":
+            print("Fetching product information from FaunaDB...")
+            product_title = json.loads(function_args)["query"]
+            output = get_product_info(product_title)
 
-        if function_name == "duckduckgo_search":
+        elif function_name == "get_vendor_info":
+            print("Fetching vendor information from FaunaDB...")
+            vendor_name = json.loads(function_args)["query"]
+            output = get_vendor_info(vendor_name)
+
+        elif function_name == "update_product_info":
+            print("Updating product information in FaunaDB...")
+            product_data = json.loads(function_args)
+            output = update_product_info(product_data["title"], product_data)
+
+        elif function_name == "update_vendor_info":
+            print("Updating vendor information in FaunaDB...")
+            vendor_data = json.loads(function_args)
+            output = update_vendor_info(vendor_data["name"], vendor_data)
+
+        elif function_name == "duckduckgo_search":
             print("Consulting Duck Duck Go...")
-            output = ddg_search.duckduckgo_search(query=json.loads(function_args)["query"])
+            # Perform web search if no FaunaDB data available
+            if not output:
+                output = ddg_search.duckduckgo_search(query=json.loads(function_args)["query"])
 
         if output:
             tool_output_array.append({"tool_call_id": tool_call_id, "output": output})
@@ -84,6 +165,7 @@ def submit_tool_outputs(thread_id, run_id, tools_to_call):
         run_id=run_id,
         tool_outputs=tool_output_array
     )
+
 
 #function prints messages from a given thread
 def print_messages_from_thread(thread_id):
