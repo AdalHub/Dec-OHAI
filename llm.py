@@ -176,31 +176,57 @@ def print_messages_from_thread(thread_id):
 
 #creates a thread, sends a query, processes the run, and then prints the messages.
 def use_assistant(query):
-  thread = client.beta.threads.create()
+    # Check if the query is about product or vendor information
+    # Modify these conditions based on how your queries are structured
+    if "product" in query.lower() or "vendor" in query.lower():
+        # Extract the last word in the query as the title/name
+        # Note: This is a simplistic approach; you may need a more sophisticated method
+        title_or_name = query.split()[-1]
 
-  message = client.beta.threads.messages.create(
-      thread_id=thread.id,
-      role="user",
-      content=query,
-  )
+        # Check in FaunaDB for product/vendor information
+        db_response = None
+        if "product" in query.lower():
+            db_response = get_product_info(title_or_name)
+        elif "vendor" in query.lower():
+            db_response = get_vendor_info(title_or_name)
 
-  print("Creating Assistant ")
+        # If found in FaunaDB, print the response and return
+        if db_response and 'error' not in db_response:
+            print(f"From FaunaDB: {db_response}")
+            return
+        else:
+            print("Not found in FaunaDB, consulting OpenAI Assistant...")
 
-  run = client.beta.threads.runs.create(
-    thread_id=thread.id,
-    assistant_id=assistant_id,
-  )
-  print(f"Assistant ID: {assistant_id}")
+    # Create a new thread for the OpenAI Assistant
+    thread = client.beta.threads.create()
 
-  print("Querying OpenAI Assistant Thread.")
+    # Create a new message in the thread
+    message = client.beta.threads.messages.create(
+        thread_id=thread.id,
+        role="user",
+        content=query,
+    )
 
-  run = wait_for_run_completion(thread.id, run.id)
+    print("Creating Assistant ")
+    print(f"Assistant ID: {assistant_id}")
 
-  if run.status == 'requires_action':
-    run = submit_tool_outputs(thread.id, run.id, run.required_action.submit_tool_outputs.tool_calls)
+    # Create a new run in the thread
+    run = client.beta.threads.runs.create(
+        thread_id=thread.id,
+        assistant_id=assistant_id,
+    )
+
+    print("Querying OpenAI Assistant Thread.")
     run = wait_for_run_completion(thread.id, run.id)
 
-  print_messages_from_thread(thread.id)
+    # Process required actions if any
+    if run.status == 'requires_action':
+        run = submit_tool_outputs(thread.id, run.id, run.required_action.submit_tool_outputs.tool_calls)
+        run = wait_for_run_completion(thread.id, run.id)
+
+    # Print the messages from the thread
+    print_messages_from_thread(thread.id)
+
   
 
 if __name__ == "__main__":
