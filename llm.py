@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from faunadb_client import get_fauna_client
 from faunadb import query as q
 from tools import tools_list
+from elasticsearch import Elasticsearch
 
 # Load environment variables from .env file
 load_dotenv()
@@ -28,14 +29,21 @@ print(result)
 
 
 
+# Initialize ElasticSearch client
+elastic_search_endpoint = os.getenv('ELASTIC_SEARCH_ENDPOINT')
+elastic_client = Elasticsearch(hosts=[elastic_search_endpoint])
 
 # Placeholder for FaunaDB lookup tool
 def fauna_db_lookup(query):
     try:
-        results = fauna_client.query(
-            q.paginate(q.match(q.index("your_index"), query))
-        )
-        return results
+        response = elastic_client.search(index="your_elastic_index", body={
+            "query": {
+                "match": {
+                    "field_to_search": query  # Adjust as per your ElasticSearch schema
+                }
+            }
+        })
+        return [hit["_source"] for hit in response["hits"]["hits"]]
     except Exception as e:
         print(f"An error occurred: {e}")
         return {}
@@ -122,7 +130,7 @@ while True:
         print("Function Calling")
         required_actions = run_status.required_action.submit_tool_outputs.tool_calls
         tool_outputs = []
-                                        
+
         for action in required_actions:
             func_name = action['function']['name']
             arguments = json.loads(action['function']['arguments'])
