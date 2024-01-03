@@ -3,7 +3,7 @@ tools_list = [
     {
         "type": "function",
         "function": {
-            "name": "fauna_db_lookup",
+            "name": "elasticsearch_lookup",
             "description": "Query the ElasticSearch database to retrieve product information",
             "parameters": {
                 "type": "object",

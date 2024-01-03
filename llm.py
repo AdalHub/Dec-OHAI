@@ -14,11 +14,21 @@ from elasticsearch import Elasticsearch
 # Load environment variables from .env file
 load_dotenv()
 
+
 # Retrieve OpenAI API key from environment variables
 open_ai_key = os.getenv('open_ai_key')
 
 # Set the OpenAI API key in the environment
 os.environ["OPENAI_API_KEY"] = open_ai_key
+
+
+# Retrieve variables from .env file
+elasticsearch_url = os.getenv('ELASTICSEARCH_URL')
+elasticsearch_api_key = os.getenv('ELASTICSEARCH_API_KEY')
+
+# Initialize the Elasticsearch client with variables from .env
+client = Elasticsearch(elasticsearch_url, api_key=elasticsearch_api_key)
+
 
 # Initialize FaunaDB client
 fauna_client = get_fauna_client()
@@ -29,24 +39,27 @@ print(result)
 
 
 
-# Initialize ElasticSearch client
-elastic_search_endpoint = os.getenv('ELASTIC_SEARCH_ENDPOINT')
-elastic_client = Elasticsearch(hosts=[elastic_search_endpoint])
 
-# Placeholder for FaunaDB lookup tool
-def fauna_db_lookup(query):
+# Placeholder for Elasticsearch lookup tool
+def elasticsearch_lookup(search_term, search_field):
     try:
-        response = elastic_client.search(index="your_elastic_index", body={
+        index_name = "search-product-vendor"  # The index to search in
+
+        search_body = {
             "query": {
                 "match": {
-                    "field_to_search": query  # Adjust as per your ElasticSearch schema
+                    search_field: search_term  # Dynamically choose the field to search
                 }
             }
-        })
+        }
+
+        response = client.search(index=index_name, body=search_body)
         return [hit["_source"] for hit in response["hits"]["hits"]]
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return {}
+        print(f"An error occurred during Elasticsearch search: {e}")
+        return []
+
+
 
 # Placeholder for DuckDuckGo web search tool
 def duckduckgo_search(query):
@@ -135,9 +148,9 @@ while True:
             func_name = action['function']['name']
             arguments = json.loads(action['function']['arguments'])
 
-            if func_name == "fauna_db_lookup":
+            if func_name == "elasticsearch_lookup":
                 # Create query for ElasticSearch and execute
-                query_result = fauna_db_lookup(arguments['query'])
+                query_result = elasticsearch_lookup(arguments['query'])
                 tool_outputs.append({
                     "tool_call_id": action['id'],
                     "output": query_result
