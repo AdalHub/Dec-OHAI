@@ -8,12 +8,16 @@ tools_list = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {
+                    "search_term": {
                         "type": "string",
-                        "description": "The search query for the product"
+                        "description": "The term to search for in the ElasticSearch database"
+                    },
+                    "search_field": {
+                        "type": "string",
+                        "description": "The field in the ElasticSearch database to search against"
                     }
                 },
-                "required": ["query"]
+                "required": ["search_term", "search_field"]
             }
         }
     },
